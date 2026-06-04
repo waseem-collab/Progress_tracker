@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CS Task Manager</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1>Customer Success Task Manager</h1>
+        <p class="tagline">Track client escalations from intake to resolution</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" id="exportBtn" title="Download a JSON backup">Export</button>
+      <button class="btn btn-ghost" id="importBtn" title="Restore from a JSON backup">Import</button>
+      <input type="file" id="importFile" accept="application/json" hidden />
+      <button class="btn btn-primary" id="newTaskBtn">+ New Task</button>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="stat-card"><span class="stat-label">Total</span><span class="stat-value" id="statTotal">0</span></div>
+    <div class="stat-card escalated"><span class="stat-label">Escalated</span><span class="stat-value" id="statEscalated">0</span></div>
+    <div class="stat-card progress"><span class="stat-label">In Progress</span><span class="stat-value" id="statProgress">0</span></div>
+    <div class="stat-card completed"><span class="stat-label">Completed</span><span class="stat-value" id="statCompleted">0</span></div>
+    <div class="stat-card rejected"><span class="stat-label">Rejected</span><span class="stat-value" id="statRejected">0</span></div>
+  </section>
+
+  <section class="filters">
+    <div class="filter-group">
+      <label for="clientFilter">Client</label>
+      <select id="clientFilter"><option value="">All clients</option></select>
+    </div>
+    <div class="filter-group">
+      <label for="priorityFilter">Priority</label>
+      <select id="priorityFilter">
+        <option value="">All</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+    <div class="filter-group grow">
+      <label for="searchInput">Search</label>
+      <input type="text" id="searchInput" placeholder="Search title, description, or client…" />
+    </div>
+    <button class="btn btn-ghost" id="clearFiltersBtn">Clear</button>
+  </section>
+
+  <main class="board" id="board">
+    <div class="column" data-status="escalated">
+      <div class="column-header">
+        <div class="column-title">
+          <span class="dot escalated"></span>
+          <h2>Escalated to Team</h2>
+        </div>
+        <span class="count" id="countEscalated">0</span>
+      </div>
+      <div class="card-list" data-dropzone="escalated"></div>
+    </div>
+
+    <div class="column" data-status="in-progress">
+      <div class="column-header">
+        <div class="column-title">
+          <span class="dot progress"></span>
+          <h2>In Progress</h2>
+        </div>
+        <span class="count" id="countProgress">0</span>
+      </div>
+      <div class="card-list" data-dropzone="in-progress"></div>
+    </div>
+
+    <div class="column" data-status="completed">
+      <div class="column-header">
+        <div class="column-title">
+          <span class="dot completed"></span>
+          <h2>Completed</h2>
+        </div>
+        <span class="count" id="countCompleted">0</span>
+      </div>
+      <div class="card-list" data-dropzone="completed"></div>
+    </div>
+
+    <div class="column" data-status="rejected">
+      <div class="column-header">
+        <div class="column-title">
+          <span class="dot rejected"></span>
+          <h2>Rejected</h2>
+        </div>
+        <span class="count" id="countRejected">0</span>
+      </div>
+      <div class="card-list" data-dropzone="rejected"></div>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle">New Task</h2>
+        <button class="icon-btn" id="modalCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <form id="taskForm" class="modal-body">
+        <input type="hidden" id="taskId" />
+        <div class="form-row">
+          <label for="taskTitle">Title <span class="req">*</span></label>
+          <input type="text" id="taskTitle" required maxlength="120" placeholder="Brief summary of the task" />
+        </div>
+        <div class="form-row">
+          <label for="taskClient">Client <span class="req">*</span></label>
+          <input type="text" id="taskClient" required maxlength="80" placeholder="e.g. Acme Corp" list="clientList" />
+          <datalist id="clientList"></datalist>
+        </div>
+        <div class="form-row two-col">
+          <div>
+            <label for="taskPriority">Priority</label>
+            <select id="taskPriority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div>
+            <label for="taskStatus">Status</label>
+            <select id="taskStatus">
+              <option value="escalated">Escalated to Team</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="taskDueDate">Due date</label>
+          <input type="date" id="taskDueDate" />
+        </div>
+        <div class="form-row">
+          <label for="taskDescription">Description / notes</label>
+          <textarea id="taskDescription" rows="4" placeholder="Context, ticket links, blockers…"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="modalCancelBtn">Cancel</button>
+          <button type="button" class="btn btn-danger" id="modalDeleteBtn" hidden>Delete</button>
+          <button type="submit" class="btn btn-primary" id="modalSaveBtn">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
