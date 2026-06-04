@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useUser, UserButton } from '@clerk/nextjs';
-import type { Task, TaskStatus, Priority, Company, Site } from '@/lib/types';
+import type { Task, TaskStatus, Priority, Company, Site, PersonalTask } from '@/lib/types';
 import { STATUSES, STATUS_LABEL } from '@/lib/types';
 import {
   loadTasks,
@@ -11,6 +11,8 @@ import {
   saveCompanies,
   loadSites,
   saveSites,
+  loadPersonalTasks,
+  savePersonalTasks,
   uid,
 } from '@/lib/storage';
 import TaskCard from './TaskCard';
@@ -21,6 +23,7 @@ import EmptyState from './EmptyState';
 import PersonalTasks from './PersonalTasks';
 import SettingsModal from './SettingsModal';
 import Dropdown from './Dropdown';
+import ExportModal from './ExportModal';
 
 type Mode = 'client' | 'personal';
 
@@ -40,6 +43,8 @@ export default function TaskManager() {
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
   const [addSiteOpen, setAddSiteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [personalTasksForExport, setPersonalTasksForExport] = useState<PersonalTask[]>([]);
 
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [selectedSiteId, setSelectedSiteId] = useState('');
@@ -334,18 +339,28 @@ export default function TaskManager() {
   };
 
   // Export / Import
-  const handleExport = () => {
-    const blob = new Blob(
-      [JSON.stringify({ companies, sites, tasks }, null, 2)],
-      { type: 'application/json' }
-    );
+  const openExport = () => {
+    if (userId) setPersonalTasksForExport(loadPersonalTasks(userId));
+    setExportOpen(true);
+  };
+
+  const performExport = (selected: {
+    companies: Company[];
+    sites: Site[];
+    tasks: Task[];
+    personalTasks: PersonalTask[];
+  }) => {
+    const blob = new Blob([JSON.stringify(selected, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cs-tasks-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `progress-tracker-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('Exported');
+    setExportOpen(false);
+    const n =
+      selected.tasks.length + selected.personalTasks.length;
+    showToast(`Exported ${n} task${n === 1 ? '' : 's'}`);
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -364,15 +379,15 @@ export default function TaskManager() {
       ) {
         throw new Error('File must contain companies, sites, and tasks arrays');
       }
-      if (
-        !confirm(
-          `Import ${data.companies.length} companies, ${data.sites.length} sites, and ${data.tasks.length} tasks? This will replace your current data.`
-        )
-      )
-        return;
+      const personal = Array.isArray(data.personalTasks) ? data.personalTasks : [];
+      const summary = `Import ${data.companies.length} companies, ${data.sites.length} sites, ${data.tasks.length} client tasks${
+        personal.length ? `, and ${personal.length} personal tasks` : ''
+      }? This will replace your current data.`;
+      if (!confirm(summary)) return;
       setCompanies(data.companies);
       setSites(data.sites);
       setTasks(data.tasks);
+      if (personal.length && userId) savePersonalTasks(userId, personal);
       showToast('Imported');
     } catch (err) {
       alert('Could not import file: ' + (err as Error).message);
@@ -424,7 +439,7 @@ export default function TaskManager() {
           <span className="brand-name">Progress Tracker</span>
         </div>
         <div className="topbar-actions">
-          <button className="btn btn-ghost" onClick={handleExport} title="Download a JSON backup">
+          <button className="btn btn-ghost" onClick={openExport} title="Pick what to export">
             Export
           </button>
           <button className="btn btn-ghost" onClick={handleImportClick} title="Restore from a JSON backup">
@@ -777,6 +792,16 @@ export default function TaskManager() {
           setSettingsOpen(false);
           openAddSiteForCompany(companyId, e);
         }}
+      />
+
+      <ExportModal
+        open={exportOpen}
+        companies={companies}
+        sites={sites}
+        tasks={tasks}
+        personalTasks={personalTasksForExport}
+        onClose={() => setExportOpen(false)}
+        onExport={performExport}
       />
 
       {toastMsg && <div className="toast">{toastMsg}</div>}

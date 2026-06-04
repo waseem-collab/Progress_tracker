@@ -1114,6 +1114,113 @@ input:focus, select:focus, textarea:focus {
   flex: 0 0 150px;
 }
 
+/* ---------- Export modal ---------- */
+.export-modal { max-width: 560px; }
+.export-body { padding-top: 0 !important; }
+.export-actions {
+  display: flex;
+  gap: 6px;
+  padding: 12px 0 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.export-bulk-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.export-bulk-btn:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+.export-section { margin-bottom: 18px; }
+.export-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px;
+}
+.export-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 13px;
+  padding: 8px 4px;
+  margin: 0;
+}
+.export-list { display: flex; flex-direction: column; gap: 6px; }
+.export-company-block {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.export-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text);
+}
+.export-row input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.export-row-company {
+  background: var(--surface-2);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.export-company-block:not(:has(.export-sites)) .export-row-company { border-bottom: none; }
+.export-row-site {
+  padding-left: 38px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400;
+}
+.export-row-site:last-child { border-bottom: none; }
+.export-expand-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.export-expand-btn:hover { background: var(--surface); color: var(--text); }
+.export-expand-btn:disabled { opacity: 0.3; cursor: default; }
+.export-name { flex: 1; }
+.export-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.export-sites { background: transparent; }
+
+.export-footer { padding: 14px 22px !important; }
+.export-summary {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.export-summary strong { color: var(--text); }
+
 /* ---------- Settings modal ---------- */
 .settings-modal { max-width: 540px; }
 .settings-body { padding-top: 0 !important; }

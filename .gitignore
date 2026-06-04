@@ -7,3 +7,6 @@ out
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
