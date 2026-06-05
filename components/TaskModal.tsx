@@ -19,19 +19,23 @@ interface Props {
   task: Task | null;
   initialStatus: TaskStatus;
   initialSiteId?: string;
-  sites: { id: string; name: string }[];
+  initialCompanyId?: string;
+  companies: { id: string; name: string }[];
+  sites: { id: string; name: string; companyId: string }[];
   contextLabel: string;
   origin?: { x: number; y: number } | null;
   onClose: () => void;
   onSave: (data: TaskFormData) => void;
   onDelete: (id: string) => void;
-  onRequestAddSite?: () => void;
+  onRequestAddSite?: (companyId: string) => void;
 }
 
 export default function TaskModal({
   task,
   initialStatus,
   initialSiteId,
+  initialCompanyId,
+  companies,
   sites,
   contextLabel,
   origin,
@@ -49,18 +53,39 @@ export default function TaskModal({
   const [priority, setPriority] = useState<Priority>(task?.priority ?? 'low');
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? initialStatus);
   const [dueDate, setDueDate] = useState<string>(task?.dueDate ?? '');
-  const [siteId, setSiteId] = useState<string>(
-    task?.siteId ?? initialSiteId ?? sites[0]?.id ?? ''
+  // Derive the company for an existing task from its site, otherwise use the initial.
+  const editingCompanyId = task
+    ? sites.find((s) => s.id === task.siteId)?.companyId ?? ''
+    : '';
+  const [companyId, setCompanyId] = useState<string>(
+    editingCompanyId || initialCompanyId || companies[0]?.id || ''
   );
+  // Sites available for the currently-selected company.
+  const sitesInCompany = sites.filter((s) => s.companyId === companyId);
+  const [siteId, setSiteId] = useState<string>(
+    task?.siteId ?? initialSiteId ?? sitesInCompany[0]?.id ?? ''
+  );
+
+  const handleCompanyChange = (newCompanyId: string) => {
+    if (newCompanyId === companyId) return;
+    setCompanyId(newCompanyId);
+    // Reset site to the first site of the newly-picked company.
+    const firstSite = sites.find((s) => s.companyId === newCompanyId);
+    setSiteId(firstSite?.id ?? '');
+  };
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // When a new site appears in the list (e.g. added via "+ Add Site"), auto-select it.
+  // When a new site appears in the list (e.g. added via "+ Add Site"), auto-select it
+  // and switch to its company so the picker reflects the new value.
   const prevSiteIdsRef = useRef(new Set(sites.map((s) => s.id)));
   useEffect(() => {
     const prev = prevSiteIdsRef.current;
     const added = sites.find((s) => !prev.has(s.id));
-    if (added) setSiteId(added.id);
+    if (added) {
+      setCompanyId(added.companyId);
+      setSiteId(added.id);
+    }
     prevSiteIdsRef.current = new Set(sites.map((s) => s.id));
   }, [sites]);
 
@@ -161,18 +186,35 @@ export default function TaskModal({
               placeholder="Brief summary of the task"
             />
           </div>
-          <div className="form-row">
-            <label htmlFor="taskSite">
-              Site <span className="req">*</span>
-            </label>
-            <Dropdown
-              id="taskSite"
-              options={sites.length === 0 ? [{ id: '', name: '(No sites in this company)' }] : sites}
-              value={siteId}
-              onChange={setSiteId}
-              onAddNew={onRequestAddSite}
-              addNewLabel="+ Add Site"
-            />
+          <div className="form-row two-col">
+            <div>
+              <label htmlFor="taskCompany">
+                Company <span className="req">*</span>
+              </label>
+              <Dropdown
+                id="taskCompany"
+                options={companies}
+                value={companyId}
+                onChange={handleCompanyChange}
+              />
+            </div>
+            <div>
+              <label htmlFor="taskSite">
+                Site <span className="req">*</span>
+              </label>
+              <Dropdown
+                id="taskSite"
+                options={
+                  sitesInCompany.length === 0
+                    ? [{ id: '', name: '(No sites in this company)' }]
+                    : sitesInCompany.map((s) => ({ id: s.id, name: s.name }))
+                }
+                value={siteId}
+                onChange={setSiteId}
+                onAddNew={onRequestAddSite ? () => onRequestAddSite(companyId) : undefined}
+                addNewLabel="+ Add Site"
+              />
+            </div>
           </div>
           {isEditing ? (
             <div className="form-row two-col">

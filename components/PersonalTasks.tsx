@@ -26,6 +26,15 @@ export default function PersonalTasks({ onShowToast, registerNewTaskHandler }: P
   const [initialStatus, setInitialStatus] = useState<PersonalStatus>('enrolled');
 
   const [dragOverStatus, setDragOverStatus] = useState<PersonalStatus | null>(null);
+  const [expanded, setExpanded] = useState<Record<PersonalStatus, boolean>>({
+    enrolled: true,
+    ongoing: true,
+    completed: false,
+  });
+  const COLLAPSIBLE: PersonalStatus[] = ['completed'];
+  const RECENT_COUNT = 1;
+  const toggleExpanded = (status: PersonalStatus) =>
+    setExpanded((prev) => ({ ...prev, [status]: !prev[status] }));
 
   const [origin, setOrigin] = useState<{ x: number; y: number } | null>(null);
   const captureOrigin = (e: { currentTarget: EventTarget & HTMLElement }) => {
@@ -153,6 +162,10 @@ export default function PersonalTasks({ onShowToast, registerNewTaskHandler }: P
       <main className="board board-personal">
         {PERSONAL_STATUSES.map((status) => {
           const items = tasksByStatus(status);
+          const collapsible = COLLAPSIBLE.includes(status);
+          const isExpanded = expanded[status];
+          const visibleItems =
+            collapsible && !isExpanded ? items.slice(0, RECENT_COUNT) : items;
           return (
             <div className="column" key={status} data-status={status}>
               <div className="column-header">
@@ -182,13 +195,29 @@ export default function PersonalTasks({ onShowToast, registerNewTaskHandler }: P
                 {items.length === 0 ? (
                   <div className="empty-state">No tasks</div>
                 ) : (
-                  items.map((task) => (
+                  visibleItems.map((task) => (
                     <PersonalTaskCard
                       key={task.id}
                       task={task}
                       onClick={(e) => openEdit(e, task)}
                     />
                   ))
+                )}
+                {collapsible && items.length > RECENT_COUNT && (
+                  <div className="expand-row">
+                    <button
+                      type="button"
+                      className={`expand-btn${isExpanded ? ' expanded' : ''}`}
+                      onClick={() => toggleExpanded(status)}
+                      aria-expanded={isExpanded}
+                    >
+                      {isExpanded ? (
+                        <>Show only recent <span className="arrow">▾</span></>
+                      ) : (
+                        <>View all {items.length} <span className="arrow">▾</span></>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

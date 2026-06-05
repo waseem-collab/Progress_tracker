@@ -45,6 +45,7 @@ export default function TaskManager() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [personalTasksForExport, setPersonalTasksForExport] = useState<PersonalTask[]>([]);
+  const [pendingAddSiteCompanyId, setPendingAddSiteCompanyId] = useState('');
 
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [selectedSiteId, setSelectedSiteId] = useState('');
@@ -290,16 +291,20 @@ export default function TaskManager() {
   };
 
   const handleAddSite = (name: string) => {
-    if (!selectedCompany) return;
+    // Use the override if set (came from TaskModal context), else the page's selected company.
+    const targetCompanyId = pendingAddSiteCompanyId || selectedCompany?.id;
+    if (!targetCompanyId) return;
     const newSite: Site = {
       id: uid('s'),
       name,
-      companyId: selectedCompany.id,
+      companyId: targetCompanyId,
       createdAt: Date.now(),
     };
     setSites((prev) => [...prev, newSite]);
-    setSelectedSiteId(newSite.id);
+    // Only update the page's selected site if this is for the currently-viewed company.
+    if (targetCompanyId === selectedCompany?.id) setSelectedSiteId(newSite.id);
     setAddSiteOpen(false);
+    setPendingAddSiteCompanyId('');
     showToast(`Site "${name}" added`);
   };
 
@@ -428,7 +433,9 @@ export default function TaskManager() {
     : selectedCompany && selectedSite
     ? `${selectedCompany.name} · ${selectedSite.name}`
     : '';
-  const canCreateTask = sitesInSelectedCompany.length > 0;
+  // User can create a task if ANY company has at least one site
+  // (Company + Site are pickable inside the modal).
+  const canCreateTask = sites.length > 0;
 
   return (
     <>
@@ -743,17 +750,25 @@ export default function TaskManager() {
         <TaskModal
           task={editingTask}
           initialStatus={initialStatus}
+          initialCompanyId={selectedCompanyId}
           initialSiteId={selectedSiteId || sitesInSelectedCompany[0]?.id || ''}
-          sites={sitesInSelectedCompany
+          companies={companies
             .slice()
             .sort((a, b) => a.name.localeCompare(b.name))
-            .map((s) => ({ id: s.id, name: s.name }))}
+            .map((c) => ({ id: c.id, name: c.name }))}
+          sites={sites
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((s) => ({ id: s.id, name: s.name, companyId: s.companyId }))}
           contextLabel={selectedCompany?.name ?? ''}
           origin={origin}
           onClose={closeModal}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
-          onRequestAddSite={() => setAddSiteOpen(true)}
+          onRequestAddSite={(companyId) => {
+            setPendingAddSiteCompanyId(companyId);
+            setAddSiteOpen(true);
+          }}
         />
       )}
 
@@ -766,15 +781,26 @@ export default function TaskManager() {
         />
       )}
 
-      {addSiteOpen && selectedCompany && (
-        <AddSiteModal
-          company={selectedCompany}
-          existingSiteNames={sitesInSelectedCompany.map((s) => s.name)}
-          origin={origin}
-          onClose={() => setAddSiteOpen(false)}
-          onAdd={handleAddSite}
-        />
-      )}
+      {addSiteOpen && (() => {
+        const targetId = pendingAddSiteCompanyId || selectedCompany?.id || '';
+        const targetCompany = companies.find((c) => c.id === targetId);
+        if (!targetCompany) return null;
+        const existingNames = sites
+          .filter((s) => s.companyId === targetCompany.id)
+          .map((s) => s.name);
+        return (
+          <AddSiteModal
+            company={targetCompany}
+            existingSiteNames={existingNames}
+            origin={origin}
+            onClose={() => {
+              setAddSiteOpen(false);
+              setPendingAddSiteCompanyId('');
+            }}
+            onAdd={handleAddSite}
+          />
+        );
+      })()}
 
       <SettingsModal
         open={settingsOpen}
