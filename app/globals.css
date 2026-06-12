@@ -870,6 +870,50 @@ input:focus, select:focus, textarea:focus {
   color: var(--text-muted);
 }
 .history-time-abs { opacity: 0.7; }
+.history-note {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+/* Completion note dialog */
+.completion-dialog { max-width: 460px; }
+.completion-body { padding-bottom: 16px !important; }
+.completion-dialog .modal-footer {
+  margin-top: 0;
+  padding: 14px 22px 18px;
+}
+.completion-task-title {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin: 0 0 14px;
+  border-left: 3px solid var(--primary);
+}
+.completion-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+  margin-bottom: 6px;
+}
+.completion-optional {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.completion-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 8px 0 0;
+}
 
 /* Confirm dialog (custom replacement for window.confirm) */
 .confirm-backdrop { z-index: 1100; }

@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 interface Entry {
   status: string;
   at: number;
+  note?: string;
 }
 
 interface Props {
@@ -90,6 +91,7 @@ export default function HistoryDialog({
                     {i === 0 ? 'Created' : 'Moved'} · {relativeTime(entry.at)}
                     <span className="history-time-abs"> · {absoluteTime(entry.at)}</span>
                   </div>
+                  {entry.note && <div className="history-note">{entry.note}</div>}
                 </div>
               </div>
             ))

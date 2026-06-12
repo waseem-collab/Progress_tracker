@@ -24,6 +24,7 @@ import PersonalTasks from './PersonalTasks';
 import SettingsModal from './SettingsModal';
 import Dropdown from './Dropdown';
 import ExportModal from './ExportModal';
+import CompletionNoteDialog from './CompletionNoteDialog';
 
 type Mode = 'client' | 'personal';
 
@@ -46,6 +47,7 @@ export default function TaskManager() {
   const [exportOpen, setExportOpen] = useState(false);
   const [personalTasksForExport, setPersonalTasksForExport] = useState<PersonalTask[]>([]);
   const [pendingAddSiteCompanyId, setPendingAddSiteCompanyId] = useState('');
+  const [pendingComplete, setPendingComplete] = useState<{ id: string; title: string } | null>(null);
 
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [selectedSiteId, setSelectedSiteId] = useState('');
@@ -260,24 +262,44 @@ export default function TaskManager() {
     closeModal();
   };
 
-  const moveTask = (id: string, newStatus: TaskStatus) => {
+  const performMoveTask = (id: string, newStatus: TaskStatus, note?: string) => {
     setTasks((prev) => {
       const t = prev.find((x) => x.id === id);
       if (!t || t.status === newStatus) return prev;
       const now = Date.now();
       const baseHistory = t.history ?? [{ status: t.status, at: t.createdAt }];
+      const newEntry = note
+        ? { status: newStatus, at: now, note }
+        : { status: newStatus, at: now };
       return prev.map((x) =>
         x.id === id
           ? {
               ...x,
               status: newStatus,
               updatedAt: now,
-              history: [...baseHistory, { status: newStatus, at: now }],
+              history: [...baseHistory, newEntry],
             }
           : x
       );
     });
     showToast(`Moved to "${STATUS_LABEL[newStatus]}"`);
+  };
+
+  const moveTask = (id: string, newStatus: TaskStatus) => {
+    const t = tasks.find((x) => x.id === id);
+    if (!t || t.status === newStatus) return;
+    // Prompt for an optional completion note when moving into Completed.
+    if (newStatus === 'completed') {
+      setPendingComplete({ id, title: t.title });
+      return;
+    }
+    performMoveTask(id, newStatus);
+  };
+
+  const handleCompletionNote = (note: string) => {
+    if (!pendingComplete) return;
+    performMoveTask(pendingComplete.id, 'completed', note || undefined);
+    setPendingComplete(null);
   };
 
   // Company / Site operations
@@ -828,6 +850,13 @@ export default function TaskManager() {
         personalTasks={personalTasksForExport}
         onClose={() => setExportOpen(false)}
         onExport={performExport}
+      />
+
+      <CompletionNoteDialog
+        open={!!pendingComplete}
+        taskTitle={pendingComplete?.title}
+        onSubmit={handleCompletionNote}
+        onCancel={() => setPendingComplete(null)}
       />
 
       {toastMsg && <div className="toast">{toastMsg}</div>}

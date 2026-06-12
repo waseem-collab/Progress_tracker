@@ -17,6 +17,7 @@ export interface Site {
 export interface TaskHistoryEntry {
   status: TaskStatus;
   at: number;
+  note?: string;
 }
 
 export interface Task {
@@ -55,6 +56,7 @@ export const PERSONAL_STATUS_LABEL: Record<PersonalStatus, string> = {
 export interface PersonalHistoryEntry {
   status: PersonalStatus;
   at: number;
+  note?: string;
 }
 
 export interface PersonalTask {

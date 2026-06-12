@@ -7,6 +7,7 @@ import { PERSONAL_STATUSES, PERSONAL_STATUS_LABEL } from '@/lib/types';
 import { loadPersonalTasks, savePersonalTasks, uid } from '@/lib/storage';
 import PersonalTaskCard from './PersonalTaskCard';
 import PersonalTaskModal, { type PersonalTaskFormData } from './PersonalTaskModal';
+import CompletionNoteDialog from './CompletionNoteDialog';
 
 interface Props {
   onShowToast: (msg: string) => void;
@@ -26,6 +27,7 @@ export default function PersonalTasks({ onShowToast, registerNewTaskHandler }: P
   const [initialStatus, setInitialStatus] = useState<PersonalStatus>('enrolled');
 
   const [dragOverStatus, setDragOverStatus] = useState<PersonalStatus | null>(null);
+  const [pendingComplete, setPendingComplete] = useState<{ id: string; title: string } | null>(null);
   const [expanded, setExpanded] = useState<Record<PersonalStatus, boolean>>({
     enrolled: true,
     ongoing: true,
@@ -120,24 +122,43 @@ export default function PersonalTasks({ onShowToast, registerNewTaskHandler }: P
     closeModal();
   };
 
-  const moveTask = (id: string, newStatus: PersonalStatus) => {
+  const performMoveTask = (id: string, newStatus: PersonalStatus, note?: string) => {
     setTasks((prev) => {
       const t = prev.find((x) => x.id === id);
       if (!t || t.status === newStatus) return prev;
       const now = Date.now();
       const baseHistory = t.history ?? [{ status: t.status, at: t.createdAt }];
+      const newEntry = note
+        ? { status: newStatus, at: now, note }
+        : { status: newStatus, at: now };
       return prev.map((x) =>
         x.id === id
           ? {
               ...x,
               status: newStatus,
               updatedAt: now,
-              history: [...baseHistory, { status: newStatus, at: now }],
+              history: [...baseHistory, newEntry],
             }
           : x
       );
     });
     onShowToast(`Moved to "${PERSONAL_STATUS_LABEL[newStatus]}"`);
+  };
+
+  const moveTask = (id: string, newStatus: PersonalStatus) => {
+    const t = tasks.find((x) => x.id === id);
+    if (!t || t.status === newStatus) return;
+    if (newStatus === 'completed') {
+      setPendingComplete({ id, title: t.title });
+      return;
+    }
+    performMoveTask(id, newStatus);
+  };
+
+  const handleCompletionNote = (note: string) => {
+    if (!pendingComplete) return;
+    performMoveTask(pendingComplete.id, 'completed', note || undefined);
+    setPendingComplete(null);
   };
 
   const tasksByStatus = (status: PersonalStatus) =>
@@ -235,6 +256,13 @@ export default function PersonalTasks({ onShowToast, registerNewTaskHandler }: P
           onDelete={handleDelete}
         />
       )}
+
+      <CompletionNoteDialog
+        open={!!pendingComplete}
+        taskTitle={pendingComplete?.title}
+        onSubmit={handleCompletionNote}
+        onCancel={() => setPendingComplete(null)}
+      />
     </>
   );
 }
