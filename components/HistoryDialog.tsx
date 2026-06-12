@@ -79,22 +79,26 @@ export default function HistoryDialog({
           {entries.length === 0 ? (
             <div className="history-empty">No history yet</div>
           ) : (
-            entries.map((entry, i) => (
-              <div key={i} className="history-entry">
-                <div className="history-rail">
-                  <span className={`history-dot dot ${dotClass ? dotClass(entry.status) : entry.status}`} />
-                  {i < entries.length - 1 && <span className="history-line" />}
-                </div>
-                <div className="history-body">
-                  <div className="history-status">{labels[entry.status] || entry.status}</div>
-                  <div className="history-time">
-                    {i === 0 ? 'Created' : 'Moved'} · {relativeTime(entry.at)}
-                    <span className="history-time-abs"> · {absoluteTime(entry.at)}</span>
+            [...entries].reverse().map((entry, i, arr) => {
+              // After reversing, the BOTTOM entry is the original "Created" one.
+              const isBottom = i === arr.length - 1;
+              return (
+                <div key={i} className="history-entry">
+                  <div className="history-rail">
+                    <span className={`history-dot dot ${dotClass ? dotClass(entry.status) : entry.status}`} />
+                    {!isBottom && <span className="history-line" />}
                   </div>
-                  {entry.note && <div className="history-note">{entry.note}</div>}
+                  <div className="history-body">
+                    <div className="history-status">{labels[entry.status] || entry.status}</div>
+                    <div className="history-time">
+                      {isBottom ? 'Created' : 'Moved'} · {relativeTime(entry.at)}
+                      <span className="history-time-abs"> · {absoluteTime(entry.at)}</span>
+                    </div>
+                    {entry.note && <div className="history-note">{entry.note}</div>}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
