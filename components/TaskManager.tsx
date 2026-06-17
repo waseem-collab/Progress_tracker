@@ -598,7 +598,12 @@ export default function TaskManager() {
               .map((c) => {
                 const compSites = sites.filter((s) => s.companyId === c.id);
                 const compSiteIds = new Set(compSites.map((s) => s.id));
-                const compTasks = tasks.filter((t) => compSiteIds.has(t.siteId));
+                const compTasks = tasks.filter(
+                  (t) =>
+                    compSiteIds.has(t.siteId) &&
+                    t.status !== 'completed' &&
+                    t.status !== 'rejected',
+                );
                 return (
                   <button
                     key={c.id}
